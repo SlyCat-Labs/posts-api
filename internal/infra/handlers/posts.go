@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jdashel/posts-api/internal/domain/interfaces"
@@ -44,15 +45,31 @@ func (h *PostsHandlers) CreatePost(c *gin.Context) {
 	c.JSON(http.StatusCreated, createdPost)
 }
 
-// GetAllPosts retrieves all posts
-func (h *PostsHandlers) GetAllPosts(c *gin.Context) { // Extract token from request
+// GetAllPosts retrieves posts with pagination
+func (h *PostsHandlers) GetAllPosts(c *gin.Context) {
+	// Extract token from request
 	token := c.Request.Header.Get("Authorization") // Assuming token is in the Authorization header
 	if token == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	// Fetch posts from the use case
-	posts, err := h.useCases.GetAllPosts(c.Request.Context(), token)
+
+	// Get pagination parameters from query string
+	pageNumber, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil {
+		// Handle invalid pageNumber
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page number"})
+		return
+	}
+	pageSize, err := strconv.Atoi(c.DefaultQuery("size", "10"))
+	if err != nil {
+		// Handle invalid pageSize
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page size"})
+		return
+	}
+
+	// Fetch posts with pagination from the use case
+	posts, err := h.useCases.GetAllPosts(c.Request.Context(), token, pageNumber, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

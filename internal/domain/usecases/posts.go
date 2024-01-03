@@ -66,19 +66,22 @@ func (uc *PostsUseCases) GetPostById(ctx context.Context, token string, id strin
 	return uc.repository.Read(ctx, id, authorID)
 }
 
-// GetAllPosts retrieves all posts
-func (uc *PostsUseCases) GetAllPosts(ctx context.Context, token string) ([]*models.Post, error) {
+// GetAllPosts retrieves posts with pagination
+func (uc *PostsUseCases) GetAllPosts(ctx context.Context, token string, pageNumber int, pageSize int) ([]*models.Post, error) {
 	// Validate user token
 	claims, err := uc.tokenService.ParseToken(token)
 	if err != nil {
 		return nil, errors.New("invalid token")
 	}
 	authorID := claims["user_id"].(string)
+
+	// Retrieve posts with pagination
+	posts, err := uc.repository.Find(ctx, authorID, pageNumber, pageSize)
 	if err != nil {
-		return nil, errors.New("invalid user ID in token")
+		return nil, err
 	}
 
-	return uc.repository.Find(ctx, authorID)
+	return posts, nil
 }
 
 // UpdatePost updates an existing post
