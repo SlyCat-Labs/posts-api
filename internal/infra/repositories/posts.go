@@ -50,10 +50,12 @@ func (repo *PostsRepository) Read(ctx context.Context, id string, authorId strin
 	return &post, nil
 }
 
-// GetAllPosts retrieves all posts
-func (repo *PostsRepository) Find(ctx context.Context, authorId string) ([]*models.Post, error) {
-	stmt := `SELECT * FROM posts WHERE author_id = $1`
-	rows, err := repo.db.QueryContext(ctx, stmt, authorId)
+// GetAllPosts retrieves posts with pagination
+func (repo *PostsRepository) Find(ctx context.Context, authorId string, pageNumber int, pageSize int) ([]*models.Post, error) {
+	offset := (pageNumber - 1) * pageSize
+
+	stmt := `SELECT * FROM posts WHERE author_id = $1 ORDER BY created_at ASC OFFSET $2 LIMIT $3`
+	rows, err := repo.db.QueryContext(ctx, stmt, authorId, offset, pageSize)
 	if err != nil {
 		return nil, err
 	}

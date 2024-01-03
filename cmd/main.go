@@ -11,8 +11,8 @@ import (
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure cancellation, even for early errors
 
-	// Graceful shutdown
 	go func() {
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, os.Interrupt)
@@ -27,5 +27,6 @@ func main() {
 		os.Exit(1)
 	}
 
+	<-ctx.Done() // Wait for cancellation
 	fmt.Println("Server stopped")
 }
