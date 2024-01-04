@@ -25,6 +25,9 @@ func StartServer(ctx context.Context) error {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
+	// Websocket
+	socketService := services.NewGorillaSocketService()
+
 	// Repositories injection
 	postsRepository := repositories.NewPostsRepository(db)
 	usersRepository := repositories.NewUsersRepository(db)
@@ -34,11 +37,12 @@ func StartServer(ctx context.Context) error {
 	tokenService := services.NewTokenService(config.SecretKey)
 	idService := services.NewUUIDService()
 
-	// Usecases injection
-	postsUsecases := usecases.NewPostsUseCases(postsRepository, tokenService, idService)
+	// Usecases injections
+	postsUsecases := usecases.NewPostsUseCases(postsRepository, tokenService, idService, socketService)
 	usersUsecases := usecases.NewUsersUseCase(usersRepository, hashService, tokenService, idService)
 
 	// Handlers injection
+	websocketHandler := handlers.NewWebsocketHandler(socketService)
 	usersHandler := handlers.NewUsersHandler(usersUsecases)
 	postsHandler := handlers.NewPostsHandlers(postsUsecases)
 
@@ -50,6 +54,9 @@ func StartServer(ctx context.Context) error {
 	router.GET("/posts/:id", postsHandler.GetPostById)
 	router.PUT("/posts/:id", postsHandler.UpdatePost)
 	router.DELETE("/posts/:id", postsHandler.DeletePost)
+
+	// Websocket handler
+	router.GET("/ws", websocketHandler.RequestHandler())
 
 	// Users routes
 	router.POST("/signup", usersHandler.SignupHandler())

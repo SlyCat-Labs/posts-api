@@ -9,15 +9,16 @@ import (
 )
 
 type PostsUseCases struct {
-	repository   interfaces.PostsRepository
-	tokenService interfaces.TokenService
-	uuidService  interfaces.UUIDService
+	repository    interfaces.PostsRepository
+	tokenService  interfaces.TokenService
+	uuidService   interfaces.UUIDService
+	socketService interfaces.SocketService
 }
 
 // Posts usecases constructor
 func NewPostsUseCases(repository interfaces.PostsRepository,
-	tokenService interfaces.TokenService, uuidService interfaces.UUIDService) *PostsUseCases {
-	return &PostsUseCases{repository, tokenService, uuidService}
+	tokenService interfaces.TokenService, uuidService interfaces.UUIDService, socketService interfaces.SocketService) *PostsUseCases {
+	return &PostsUseCases{repository, tokenService, uuidService, socketService}
 }
 
 // CreatePost creates a new post
@@ -47,6 +48,12 @@ func (uc *PostsUseCases) CreatePost(ctx context.Context, token string, post *mod
 	if err != nil {
 		return nil, err
 	}
+
+	var postMessage = models.SocketMessage{
+		Type:    "post_created",
+		Payload: createdPost,
+	}
+	uc.socketService.Broadcast(postMessage)
 
 	return createdPost, nil
 }
